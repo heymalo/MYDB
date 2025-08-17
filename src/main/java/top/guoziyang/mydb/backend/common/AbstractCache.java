@@ -50,21 +50,21 @@ public abstract class AbstractCache<T> {
                 return obj;
             }
 
-            // 尝试获取该资源
-            if(maxResource > 0 && count == maxResource) {
+            // 作为第一个获取该资源的线程，获取资源，添加到缓存中
+            if(maxResource > 0 && count == maxResource) {   // 缓存已满检查
                 lock.unlock();
                 throw Error.CacheFullException;
             }
             count ++;
             getting.put(key, true);
             lock.unlock();
-            break;
+            break;  //跳出死循环，进入下面获取资源的代码。
         }
 
         T obj = null;
         try {
-            obj = getForCache(key);
-        } catch(Exception e) {
+            obj = getForCache(key); //从磁盘中获取资源？？
+        } catch(Exception e) {  // 获取资源失败，释放锁，抛出异常
             lock.lock();
             count --;
             getting.remove(key);
@@ -90,7 +90,10 @@ public abstract class AbstractCache<T> {
             int ref = references.get(key)-1;
             if(ref == 0) {
                 T obj = cache.get(key);
-                releaseForCache(obj);
+                releaseForCache(obj);   // 在缓存资源被真正移除前执行特定资源的清理逻辑，例如说：
+                                            //释放资源本身（如关闭文件、提交事务、释放内存）
+                                            //持久化资源状态（如将修改写回磁盘）
+                                            //清理关联对象（如关闭数据库连接池中的连接）。releaseForCache就是预留的接口
                 references.remove(key);
                 cache.remove(key);
                 count --;

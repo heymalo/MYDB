@@ -32,7 +32,7 @@ public class PageX {
         return getFSO(pg.getData());
     }
 
-    private static short getFSO(byte[] raw) {
+    private static short getFSO(byte[] raw) {   // 取页的data,取前两位，转换成short。前两位就是 FSO
         return Parser.parseShort(Arrays.copyOfRange(raw, 0, 2));
     }
 
@@ -53,10 +53,11 @@ public class PageX {
     // 将raw插入pg中的offset位置，并将pg的offset设置为较大的offset
     public static void recoverInsert(Page pg, byte[] raw, short offset) {
         pg.setDirty(true);
+        // 对应位置，覆盖过去
         System.arraycopy(raw, 0, pg.getData(), offset, raw.length);
 
-        short rawFSO = getFSO(pg.getData());
-        if(rawFSO < offset + raw.length) {
+        short rawFSO = getFSO(pg.getData());    // 获取pg新的FSO
+        if(rawFSO < offset + raw.length) {  //这个插入是针对崩溃后重新插入
             setFSO(pg.getData(), (short)(offset+raw.length));
         }
     }

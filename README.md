@@ -24,19 +24,23 @@ mvn compile
 接着执行以下命令以 /tmp/mydb 作为路径创建数据库：
 
 ```shell
-mvn exec:java -Dexec.mainClass="top.guoziyang.mydb.backend.Launcher" -Dexec.args="-create /tmp/mydb"
+//根据原作者的启动参数修改，-Dexec.args...部分更改为自己的MYDB目录即可。此外，需要提前手动创建./tmp/mydb文件夹
+mvn exec:java "-Dexec.mainClass=top.guoziyang.mydb.backend.Launcher" "-Dexec.args=-create E:\\e\\04laboratory\\MYDB\\tmp\\mydb"
 ```
 
 随后通过以下命令以默认参数启动数据库服务：
 
 ```shell
-mvn exec:java -Dexec.mainClass="top.guoziyang.mydb.backend.Launcher" -Dexec.args="-open /tmp/mydb"
+//同理上面
+mvn exec:java "-Dexec.mainClass=top.guoziyang.mydb.backend.Launcher" "-Dexec.args=-open E:\\e\\04laboratory\\MYDB\\tmp\\mydb"
 ```
 
 这时数据库服务就已经启动在本机的 9999 端口。重新启动一个终端，执行以下命令启动客户端连接数据库：
 
 ```shell
 mvn exec:java -Dexec.mainClass="top.guoziyang.mydb.client.Launcher"
+
+mvn exec:java "-Dexec.mainClass=top.guoziyang.mydb.client.Launcher" 
 ```
 
 会启动一个交互式命令行，就可以在这里输入类 SQL 语法，回车会发送语句到服务，并输出执行的结果。
@@ -44,3 +48,25 @@ mvn exec:java -Dexec.mainClass="top.guoziyang.mydb.client.Launcher"
 一个执行示例：
 
 ![](https://s3.bmp.ovh/imgs/2021/11/2749906870276904.png)
+
+## 测试语句
+
+启动mydb后的测试语句
+
+```
+`create table test_table id int32, value int32 (index id)`
+`insert into test_table values 10 33`
+`select * from test_table where id=10`
+`begin`
+`insert into test_table values 20 34`
+`commit`
+`select * from test_table where id>0`
+`begin`
+`delete from test_table where id=10`
+`abort`
+`select * from test_table where id>0`
+`delete from test_table where id=10`
+`select * from test_table where id>0`
+`quit`
+```
+

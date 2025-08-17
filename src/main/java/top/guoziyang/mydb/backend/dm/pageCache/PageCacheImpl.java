@@ -59,10 +59,10 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
     @Override
     protected Page getForCache(long key) throws Exception {
         int pgno = (int)key;
-        long offset = PageCacheImpl.pageOffset(pgno);
+        long offset = PageCacheImpl.pageOffset(pgno);   // 计算页面在文件中的起始位置
 
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
-        fileLock.lock();
+        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);    // 存储从文件中读取的页面数据
+        fileLock.lock();   //防止并发读
         try {
             fc.position(offset);
             fc.read(buf);
@@ -70,11 +70,11 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
             Panic.panic(e);
         }
         fileLock.unlock();
-        return new PageImpl(pgno, buf.array(), this);
+        return new PageImpl(pgno, buf.array(), this);   //包装成Page对象
     }
 
     @Override
-    protected void releaseForCache(Page pg) {
+    protected void releaseForCache(Page pg) {   // 从缓存清理前的必要工作，还没从缓存删除！
         if(pg.isDirty()) {
             flush(pg);
             pg.setDirty(false);
@@ -97,8 +97,8 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
         try {
             ByteBuffer buf = ByteBuffer.wrap(pg.getData());
             fc.position(offset);
-            fc.write(buf);
-            fc.force(false);
+            fc.write(buf);  // 将页数据写入文件
+            fc.force(false); // 强制将文件缓冲区中的数据写入磁盘
         } catch(IOException e) {
             Panic.panic(e);
         } finally {

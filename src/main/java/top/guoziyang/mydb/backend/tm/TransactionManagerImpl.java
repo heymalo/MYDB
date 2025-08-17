@@ -19,9 +19,9 @@ public class TransactionManagerImpl implements TransactionManager {
     private static final int XID_FIELD_SIZE = 1;
 
     // 事务的三种状态
-    private static final byte FIELD_TRAN_ACTIVE   = 0;
-	private static final byte FIELD_TRAN_COMMITTED = 1;
-	private static final byte FIELD_TRAN_ABORTED  = 2;
+    private static final byte FIELD_TRAN_ACTIVE   = 0;  // active状态
+	private static final byte FIELD_TRAN_COMMITTED = 1;     // committed状态，提交
+	private static final byte FIELD_TRAN_ABORTED  = 2;  //中断状态
 
     // 超级事务，永远为commited状态
     public static final long SUPER_XID = 0;
@@ -33,7 +33,7 @@ public class TransactionManagerImpl implements TransactionManager {
     private long xidCounter;
     private Lock counterLock;
 
-    TransactionManagerImpl(RandomAccessFile raf, FileChannel fc) {
+    TransactionManagerImpl(RandomAccessFile raf, FileChannel fc) {      //构造函数
         this.file = raf;
         this.fc = fc;
         counterLock = new ReentrantLock();
@@ -51,18 +51,18 @@ public class TransactionManagerImpl implements TransactionManager {
         } catch (IOException e1) {
             Panic.panic(Error.BadXIDFileException);
         }
-        if(fileLen < LEN_XID_HEADER_LENGTH) {
+        if(fileLen < LEN_XID_HEADER_LENGTH) {   //文件头长度为8
             Panic.panic(Error.BadXIDFileException);
         }
 
         ByteBuffer buf = ByteBuffer.allocate(LEN_XID_HEADER_LENGTH);
         try {
-            fc.position(0);
-            fc.read(buf);
+            fc.position(0); //文件指针fc,移动到文件起始位置
+            fc.read(buf);   
         } catch (IOException e) {
             Panic.panic(e);
         }
-        this.xidCounter = Parser.parseLong(buf.array());
+        this.xidCounter = Parser.parseLong(buf.array());    //字节数组解析为long型，long对应8byte，将内容以long解释
         long end = getXidPosition(this.xidCounter + 1);
         if(end != fileLen) {
             Panic.panic(Error.BadXIDFileException);
@@ -77,7 +77,7 @@ public class TransactionManagerImpl implements TransactionManager {
     // 更新xid事务的状态为status
     private void updateXID(long xid, byte status) {
         long offset = getXidPosition(xid);
-        byte[] tmp = new byte[XID_FIELD_SIZE];
+        byte[] tmp = new byte[XID_FIELD_SIZE];  //长度为1
         tmp[0] = status;
         ByteBuffer buf = ByteBuffer.wrap(tmp);
         try {
@@ -96,7 +96,7 @@ public class TransactionManagerImpl implements TransactionManager {
     // 将XID加一，并更新XID Header
     private void incrXIDCounter() {
         xidCounter ++;
-        ByteBuffer buf = ByteBuffer.wrap(Parser.long2Byte(xidCounter));
+        ByteBuffer buf = ByteBuffer.wrap(Parser.long2Byte(xidCounter)); //将xidCounter转为字节数组，并在下面再次写入
         try {
             fc.position(0);
             fc.write(buf);
@@ -104,7 +104,7 @@ public class TransactionManagerImpl implements TransactionManager {
             Panic.panic(e);
         }
         try {
-            fc.force(false);
+            fc.force(false);    //将文件缓冲区的内容强制写入磁盘
         } catch (IOException e) {
             Panic.panic(e);
         }
@@ -112,10 +112,10 @@ public class TransactionManagerImpl implements TransactionManager {
 
     // 开始一个事务，并返回XID
     public long begin() {
-        counterLock.lock();
+        counterLock.lock();     //用个锁真香，方便
         try {
             long xid = xidCounter + 1;
-            updateXID(xid, FIELD_TRAN_ACTIVE);
+            updateXID(xid, FIELD_TRAN_ACTIVE);  // 更新事务状态为active。写入xid文件
             incrXIDCounter();
             return xid;
         } finally {
